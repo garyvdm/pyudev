@@ -208,14 +208,6 @@ class TestMonitor(object):
             monitor.start()
             func.assert_called_once_with(monitor)
 
-    def test_enable_receiving(self, monitor):
-        """
-        Test that enable_receiving() is deprecated and calls out to start().
-        """
-        with mock.patch.object(monitor, 'start') as start:
-            pytest.deprecated_call(monitor.enable_receiving)
-            assert start.called
-
     def test_set_receive_buffer_size_mock(self, monitor):
         funcname = 'udev_monitor_set_receive_buffer_size'
         spec = lambda m, s: None
@@ -256,42 +248,6 @@ class TestMonitor(object):
         assert device.sequence_number > 0
         assert device.subsystem == 'net'
         assert device.device_path == '/devices/virtual/net/dummy0'
-
-    def test_receive_device(self, monitor):
-        """
-        Test that Monitor.receive_device is deprecated and calls out to
-        _receive_device(), which in turn is tested by test_poll.
-        """
-        with mock.patch.object(monitor, '_receive_device') as receive_device:
-            device = mock.Mock(name='device')
-            device.action = 'spam'
-            receive_device.return_value = device
-            event = pytest.deprecated_call(monitor.receive_device)
-            assert event[0] == 'spam'
-            assert event[1] is device
-
-    @pytest.mark.privileged
-    def test_iter(self, monitor):
-        pytest.unload_dummy()
-        monitor.filter_by('net')
-        monitor.start()
-        pytest.load_dummy()
-        iterator = iter(monitor)
-        # DeprecationWarning triggered on first invocation of generator
-        action, device = pytest.deprecated_call(next, iterator)
-        assert action == 'add'
-        assert device.action == 'add'
-        assert device.sequence_number > 0
-        assert device.subsystem == 'net'
-        assert device.device_path == '/devices/virtual/net/dummy0'
-        pytest.unload_dummy()
-        action, device = next(iterator)
-        assert action == 'remove'
-        assert device.action == 'remove'
-        assert device.sequence_number > 0
-        assert device.subsystem == 'net'
-        assert device.device_path == '/devices/virtual/net/dummy0'
-        iterator.close()
 
 
 class TestMonitorObserver(object):

@@ -80,6 +80,12 @@ class Monitor(object):
     .. versionchanged:: 0.16
        Remove :meth:`from_socket()` which is deprecated, and even removed in
        recent udev versions.
+    .. versionchanged:: 1.0
+       Remove deprecated :meth:`enable_receiving()`
+    .. versionchanged:: 1.0
+       Remove deprecated :meth:`receive_device()`
+    .. versionchanged:: 1.0
+       Remove deprecated :meth:`__iter__()`
     """
 
     def __init__(self, context, monitor_p):
@@ -212,27 +218,6 @@ class Monitor(object):
         self._libudev.udev_monitor_filter_remove(self)
         self._libudev.udev_monitor_filter_update(self)
 
-    def enable_receiving(self):
-        """
-        Switch the monitor into listing mode.
-
-        Connect to the event source and receive incoming events.  Only after
-        calling this method, the monitor listens for incoming events.
-
-        .. note::
-
-           This method is implicitly called by :meth:`__iter__`.  You don't
-           need to call it explicitly, if you are iterating over the
-           monitor.
-
-        .. deprecated:: 0.16
-           Will be removed in 1.0. Use :meth:`start()` instead.
-        """
-        import warnings
-        warnings.warn('Will be removed in 1.0. Use Monitor.start() instead.',
-                      DeprecationWarning)
-        self.start()
-
     def start(self):
         """
         Start this monitor.
@@ -281,18 +266,6 @@ class Monitor(object):
         """
         self._libudev.udev_monitor_set_receive_buffer_size(self, size)
 
-    def _receive_device(self):
-        """
-        Receive a single device from the monitor.
-
-        Return the received :class:`Device`. Raise
-        :exc:`~exceptions.EnvironmentError`, if no device could be read.
-        """
-        device_p = self._libudev.udev_monitor_receive_device(self)
-        if not device_p:
-            raise EnvironmentError('Could not receive device')
-        return Device(self.context, device_p)
-
     def poll(self, timeout=None):
         """
         Poll for a device event.
@@ -339,78 +312,12 @@ class Monitor(object):
         """
         rlist, _, _ = select.select([self], [], [], timeout)
         if self in rlist:
-            return self._receive_device()
+            device_p = self._libudev.udev_monitor_receive_device(self)
+            if not device_p:
+                raise EnvironmentError('Could not receive device')
+            return Device(self.context, device_p)
         else:
             return None
-
-    def receive_device(self):
-        """
-        Receive a single device from the monitor.
-
-        .. warning::
-
-           You *must* call :meth:`start()` before calling this method.
-
-        The caller must make sure, that there are events available in the
-        event queue.  The call blocks, until a device is available.
-
-        If a device was available, return ``(action, device)``.  ``device``
-        is the :class:`Device` object describing the device.  ``action`` is
-        a string describing the action.  Usual actions are:
-
-        ``'add'``
-          A device has been added (e.g. a USB device was plugged in)
-        ``'remove'``
-          A device has been removed (e.g. a USB device was unplugged)
-        ``'change'``
-          Something about the device changed (e.g. a device property)
-        ``'online'``
-          The device is online now
-        ``'offline'``
-          The device is offline now
-
-        Raise :exc:`~exceptions.EnvironmentError`, if no device could be
-        read.
-
-        .. deprecated:: 0.16
-           Will be removed in 1.0. Use :meth:`Monitor.poll()` instead.
-        """
-        import warnings
-        warnings.warn('Will be removed in 1.0. Use Monitor.poll() instead.',
-                      DeprecationWarning)
-        device = self._receive_device()
-        return device.action, device
-
-    def __iter__(self):
-        """
-        Wait for incoming events and receive them upon arrival.
-
-        This methods implicitly calls :meth:`start()`, and starts polling the
-        :meth:`fileno` of this monitor.  If a event comes in, it receives the
-        corresponding device and yields it to the caller.
-
-        The returned iterator is endless, and continues receiving devices
-        without ever stopping.
-
-        Yields ``(action, device)`` (see :meth:`receive_device` for a
-        description).
-
-        .. deprecated:: 0.16
-           Will be removed in 1.0. Use an explicit loop over :meth:`poll()`
-           instead, or monitor asynchronously with :class:`MonitorObserver`.
-        """
-        import warnings
-        warnings.warn('Will be removed in 1.0. Use an explicit loop over '
-                      '"poll()" instead, or monitor asynchronously with '
-                      '"MonitorObserver".', DeprecationWarning)
-        self.start()
-        with closing(select.epoll()) as notifier:
-            notifier.register(self, select.EPOLLIN)
-            while True:
-                events = notifier.poll()
-                for event in events:
-                    device = self._receive_device()
-                    yield device.action, device
 
 
 class MonitorObserver(Thread):

@@ -245,14 +245,6 @@ Version information
 
    .. automethod:: poll
 
-   .. rubric:: Deprecated members
-
-   .. automethod:: enable_receiving
-
-   .. automethod:: receive_device
-
-   .. automethod:: __iter__
-
 
 :class:`MonitorObserver` – asynchronous device monitoring
 ---------------------------------------------------------
