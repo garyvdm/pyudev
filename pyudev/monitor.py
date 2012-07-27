@@ -362,8 +362,7 @@ class MonitorObserver(Thread):
        :meth:`Monitor.start()` is implicitly called when the thread is started.
     """
 
-    def __init__(self, monitor, event_handler=None, callback=None, *args,
-                 **kwargs):
+    def __init__(self, monitor, callback, *args, **kwargs):
         """
         Create a new observer for the given ``monitor``.
 
@@ -379,27 +378,19 @@ class MonitorObserver(Thread):
         ``args`` and ``kwargs`` are passed unchanged to the constructor of
         :class:`~threading.Thread`.
 
-        .. deprecated:: 0.16
-           The ``event_handler`` argument will be removed in 1.0. Use
-           the ``callback`` argument instead.
         .. versionchanged:: 0.16
            Add ``callback`` argument.
+        .. versionchanged:: 1.0
+           Remove deprecated ``event_handler`` argument
         """
-        if callback is None and event_handler is None:
+        if callback is None:
             raise ValueError('callback missing')
-        elif callback is not None and event_handler is not None:
-            raise ValueError('Use either callback or event handler')
 
         Thread.__init__(self, *args, **kwargs)
         self.monitor = monitor
         # observer threads should not keep the interpreter alive
         self.daemon = True
         self._stop_event_source, self._stop_event_sink = os.pipe()
-        if event_handler is not None:
-            import warnings
-            warnings.warn('"event_handler" argument will be removed in 1.0. '
-                          'Use Monitor.poll() instead.', DeprecationWarning)
-            callback = lambda d: event_handler(d.action, d)
         self._callback = callback
 
     def run(self):

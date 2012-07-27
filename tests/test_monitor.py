@@ -262,12 +262,8 @@ class TestMonitorObserver(object):
         if len(self.events) >= 2:
             self.observer.send_stop()
 
-    def make_observer(self, monitor, use_deprecated=False):
-        if use_deprecated:
-            self.observer = pytest.deprecated_call(
-                MonitorObserver, monitor, event_handler=self.event_handler)
-        else:
-            self.observer = MonitorObserver(monitor, callback=self.callback)
+    def make_observer(self, monitor):
+        self.observer = MonitorObserver(monitor, callback=self.callback)
         return self.observer
 
     def setup(self):
@@ -275,18 +271,6 @@ class TestMonitorObserver(object):
 
     def teardown(self):
         self.events = None
-
-    def test_deprecated_handler(self, fake_monitor, fake_monitor_device):
-        observer = self.make_observer(fake_monitor, use_deprecated=True)
-        observer.start()
-        fake_monitor.trigger_event()
-        fake_monitor.trigger_event()
-        # wait a second for the tests to finish, and kill the observer if
-        # it is still alive then
-        observer.join(1)
-        if observer.is_alive():
-            observer.stop()
-        assert self.events == [(None, fake_monitor_device)] * 2
 
     def test_fake(self, fake_monitor, fake_monitor_device):
         observer = self.make_observer(fake_monitor)
