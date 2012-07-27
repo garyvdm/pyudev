@@ -168,6 +168,9 @@ class Device(Mapping):
 
     They can also be given directly as ``udev_device *`` to functions wrapped
     through :mod:`ctypes`.
+
+    .. versionchanged:: 1.0
+       Remove deprecated :meth:`traverse()`
     """
 
     @classmethod
@@ -466,22 +469,6 @@ class Device(Mapping):
             return None
         # parent device is not referenced, thus forcibly acquire a reference
         return Device(self.context, self._libudev.udev_device_ref(parent))
-
-    def traverse(self):
-        """
-        Traverse all parent devices of this device from bottom to top.
-
-        Return an iterable yielding all parent devices as :class:`Device`
-        objects, *not* including the current device.  The last yielded
-        :class:`Device` is the top of the device hierarchy.
-
-        .. deprecated:: 0.16
-           Will be removed in 1.0. Use :attr:`ancestors` instead.
-        """
-        import warnings
-        warnings.warn('Will be removed in 1.0. Use Device.ancestors instead.',
-                      DeprecationWarning)
-        return self.ancestors
 
     @property
     def sys_path(self):

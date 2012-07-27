@@ -273,13 +273,6 @@ class TestDevice(object):
                     device, b'subsystem', b'devtype')
                 device_ref.assert_called_once_with(mock.sentinel.parent_device)
 
-    @with_devices
-    def test_traverse(self, device):
-        child = device
-        for parent in pytest.deprecated_call(device.traverse):
-            assert parent == child.parent
-            child = parent
-
     @with_device_data
     def test_sys_path(self, device, device_data):
         assert device.sys_path == device_data.sys_path

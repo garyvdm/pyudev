@@ -173,10 +173,6 @@ Version information
 
    .. autoattribute:: attributes
 
-   .. rubric:: Deprecated members
-
-   .. automethod:: traverse
-
 .. autoclass:: Attributes()
 
    .. attribute:: device
